@@ -1,0 +1,10 @@
+[package]
+name = "mac-pedals"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+cpal     = "0.14"      # cross‑platform audio I/O
+ringbuf  = "0.2"       # lock‑free ring buffer for passing samples
+dasp     = { version = "0.11", features = ["signal"] }  # optional DSP helpers
+anyhow   = "1.0"       # error handling
