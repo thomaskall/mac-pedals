@@ -339,6 +339,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "877a4ace8713b0bcf2a4e7eec82529c029f1d0619886d18145fea96c3ffe5c0f"
 
 [[package]]
+name = "freeverb"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "68732b37b380a5009de482bc6ad5707dbd98fad8b132ba452d84519bf4b8343e"
+
+[[package]]
 name = "getrandom"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -466,6 +472,7 @@ dependencies = [
  "anyhow",
  "cpal",
  "dasp",
+ "freeverb",
  "ringbuf",
 ]
 

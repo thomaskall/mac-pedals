@@ -1,35 +1,31 @@
-# Mac Pedals - Real-time Audio Processing
+# Mac Pedals - Real-time Audio Reverb
 
-A Rust-based real-time audio processing application that captures input audio from your microphone and applies various effects before outputting to your speakers.
+A real-time audio passthrough application with reverb effects for macOS, built in Rust using the freeverb algorithm and cpal for cross-platform audio I/O.
 
 ## Features
 
-- **Real-time audio passthrough** - Capture and output audio with minimal latency
-- **Interactive effects control** - Change audio effects at runtime via keyboard input
-- **Multiple audio effects**:
-  - Passthrough (no effect)
-  - Gain (amplification)
-  - Distortion (soft clipping)
-  - Low-pass filter
-  - High-pass filter
-- **Cross-platform audio I/O** using CPAL
-- **Lock-free ring buffer** for efficient sample transfer
+- **Real-time audio processing**: Live audio input from your Mac's microphone or audio interface
+- **Reverb effects**: High-quality reverb using the freeverb algorithm
+- **Interactive controls**: Real-time parameter adjustment via command line
+- **Cross-platform audio**: Uses cpal for robust audio I/O
+- **Low latency**: Optimized for real-time performance
 
-## Prerequisites
+## Requirements
 
-- Rust (latest stable version)
-- Audio input device (microphone)
-- Audio output device (speakers/headphones)
+- macOS (tested on macOS 14.3.0)
+- Rust toolchain (install via [rustup](https://rustup.rs/))
+- Audio input device (microphone, audio interface, etc.)
+- Audio output device (speakers, headphones, etc.)
 
 ## Installation
 
 1. Clone the repository:
 ```bash
-git clone <your-repo-url>
+git clone <repository-url>
 cd mac-pedals
 ```
 
-2. Build the project:
+2. Build the application:
 ```bash
 cargo build --release
 ```
@@ -38,126 +34,131 @@ cargo build --release
 
 1. Run the application:
 ```bash
-cargo run --release
+./target/release/mac-pedals
 ```
 
-2. The application will start and display your audio configuration:
-```
-Audio format: F32
-Sample rate: 48000
-Channels: 2
-Starting audio passthrough...
-```
+2. The application will automatically detect your default audio input and output devices and start processing audio.
 
-3. Use the interactive menu to select audio effects:
-```
-=== Audio Effects Control ===
-1: Passthrough (no effect)
-2: Gain (amplify)
-3: Distortion
-4: Low-pass filter
-5: High-pass filter
-q: Quit
-============================
+3. Use the interactive controls to adjust reverb parameters in real-time:
 
-Select effect (1-5, q):
-```
+### Controls
 
-4. Type a number (1-5) to change effects, or 'q' to quit.
+- `w <0-1>` - Set wet level (reverb amount, e.g., `w 0.5`)
+- `d <0-1>` - Set dry level (original signal amount, e.g., `d 0.5`)
+- `r <0-1>` - Set room size (reverb space size, e.g., `r 0.8`)
+- `p <0-1>` - Set dampening (high-frequency decay, e.g., `p 0.4`)
+- `x <0-1>` - Set stereo width (stereo spread, e.g., `x 0.5`)
+- `q` - Quit the application
 
-## Audio Effects Explained
+### Example Usage
 
-### 1. Passthrough
-- No audio processing applied
-- Useful for testing audio routing
+```bash
+# Start with default settings
+./target/release/mac-pedals
 
-### 2. Gain
-- Amplifies the audio signal by 2x
-- Be careful with high input levels to avoid clipping
-
-### 3. Distortion
-- Applies soft clipping distortion
-- Creates harmonic overtones for guitar-like effects
-
-### 4. Low-pass Filter
-- Removes high frequencies above 1kHz
-- Creates a "muffled" or "warm" sound
-
-### 5. High-pass Filter
-- Removes low frequencies below 1kHz
-- Useful for removing rumble or focusing on high frequencies
-
-## Architecture
-
-The application uses a producer-consumer pattern with a ring buffer:
-
-1. **Input Stream**: Captures audio from microphone
-2. **Audio Processor**: Applies selected effects to samples
-3. **Ring Buffer**: Transfers processed samples between threads
-4. **Output Stream**: Plays processed audio to speakers
-
-## Extending the Project
-
-### Adding New Effects
-
-To add a new audio effect:
-
-1. Add a new variant to the `AudioEffect` enum:
-```rust
-enum AudioEffect {
-    // ... existing effects
-    Reverb(f32),  // New effect
-}
+# In the interactive console:
+w 0.3    # Set wet level to 30%
+d 0.7    # Set dry level to 70%
+r 0.9    # Set room size to 90% (large room)
+p 0.2    # Set dampening to 20% (bright reverb)
+x 0.8    # Set stereo width to 80% (wide stereo)
+q        # Quit
 ```
 
-2. Implement the processing logic in the `process` method:
-```rust
-AudioEffect::Reverb(delay) => {
-    // Implement reverb algorithm
-    sample + self.last_sample * delay
-}
-```
+## Default Settings
 
-3. Add the effect to the interactive menu in `interactive_control()`.
+The application starts with these default reverb settings:
+- **Wet Level**: 30% (reverb signal)
+- **Dry Level**: 70% (original signal)
+- **Room Size**: 80% (large room)
+- **Dampening**: 40% (moderate high-frequency decay)
+- **Stereo Width**: 50% (balanced stereo spread)
 
-### Advanced DSP
+## Technical Details
 
-For more sophisticated audio processing, consider using the `dasp` crate which is already included as a dependency. It provides:
+### Architecture
 
-- Signal generators
-- Filters
-- Envelopes
-- Interpolation
-- And more
+- **Audio I/O**: Uses cpal for cross-platform audio handling
+- **Reverb Algorithm**: Implements the freeverb algorithm with 8 comb filters and 4 all-pass filters
+- **Buffer Management**: Uses ring buffers for efficient audio data transfer
+- **Real-time Processing**: Thread-safe parameter adjustment with mutex-protected reverb instance
+
+### Audio Processing Pipeline
+
+1. **Input**: Audio captured from default input device
+2. **Format Conversion**: Automatic conversion between different sample formats (F32, I16, U16)
+3. **Stereo to Mono**: Converts stereo input to mono for processing
+4. **Reverb Processing**: Applies freeverb algorithm with current parameters
+5. **Output**: Sends processed stereo audio to default output device
+
+### Performance
+
+- **Latency**: Optimized for low-latency real-time processing
+- **CPU Usage**: Efficient implementation with minimal CPU overhead
+- **Buffer Size**: 8192 samples ring buffer for smooth audio flow
 
 ## Troubleshooting
 
 ### No Audio Input/Output
-- Check your system's audio permissions
-- Ensure microphone and speakers are properly connected
-- Try different audio devices in your system settings
+- Check that your audio devices are properly connected and set as default
+- Ensure microphone permissions are granted to the terminal application
+- Try running with different audio devices if available
 
 ### High Latency
-- Use `--release` build for better performance
-- Reduce the ring buffer size (currently 32,768 samples)
-- Check for other audio applications that might be using the audio device
+- Close other audio applications that might be using the audio devices
+- Check system audio settings for buffer size and sample rate
+- Ensure no other applications are processing audio in real-time
 
-### Audio Artifacts
-- Ensure your input levels aren't too high
-- Check for sample rate mismatches
-- Verify your audio device supports the selected format
+### Audio Distortion
+- Reduce the wet level if the reverb is too strong
+- Check input levels to ensure they're not clipping
+- Adjust room size and dampening for better sound quality
 
-## Dependencies
+## Development
 
-- `cpal` - Cross-platform audio I/O
-- `ringbuf` - Lock-free ring buffer
-- `dasp` - Digital audio signal processing
-- `anyhow` - Error handling
+### Building from Source
+
+```bash
+# Debug build
+cargo build
+
+# Release build (optimized)
+cargo build --release
+
+# Run tests
+cargo test
+```
+
+### Dependencies
+
+- `cpal`: Cross-platform audio I/O
+- `ringbuf`: Lock-free ring buffer for audio data
+- `dasp`: Digital audio signal processing utilities
+- `anyhow`: Error handling
+- `freeverb`: Custom reverb implementation
+
+### Project Structure
+
+```
+mac-pedals/
+├── src/
+│   └── main.rs          # Main application
+├── freeverb/            # Reverb algorithm implementation
+│   ├── src/
+│   │   ├── lib.rs
+│   │   ├── freeverb.rs
+│   │   ├── comb.rs
+│   │   ├── all_pass.rs
+│   │   └── delay_line.rs
+│   └── Cargo.toml
+├── Cargo.toml           # Project dependencies
+└── README.md           # This file
+```
 
 ## License
 
-[Add your license here]
+This project is open source. See the LICENSE file for details.
 
 ## Contributing
 
-[Add contribution guidelines here] 
+Contributions are welcome! Please feel free to submit pull requests or open issues for bugs and feature requests. 
